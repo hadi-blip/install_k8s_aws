@@ -1,5 +1,5 @@
-ansible_private_key_file: "~/.ssh/key_hmr.pem"
+ansible_private_key_file: "~/.ssh/id-salah.pem"
 
-master_host: "52.47.211.48"
+master_host: "35.180.187.191"
 
 master_hostname: "master"
