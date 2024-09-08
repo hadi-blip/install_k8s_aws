@@ -1,0 +1,43 @@
+- name: Restart containerd
+  systemd:
+    name: containerd
+    state: restarted
+    enabled: yes
+
+- name: Change master hostname
+  hostname:
+    name: "{{master_hostname}}"
+ 
+- name: Initialize the Kubernetes cluster using kubeadm
+  command: kubeadm init --kubernetes-version={{ kubernetes_version }}
+
+- name: Setup kubeconfig for vagrant user
+  command: "{{item}}"
+  with_items:
+    - mkdir -p /home/{{ansible_user}}/.kube
+    - cp -i /etc/kubernetes/admin.conf /home/{{ansible_user}}/.kube/config
+    - chown "{{ansible_user}}":"{{ansible_user}}" /home/{{ansible_user}}/.kube/config
+
+- name: Install flannel pod network
+  become: false
+  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/calico.yaml
+
+- name: Generate join command
+  command: kubeadm token create --print-join-command
+  register: join_command
+
+- name: Copy join command to local file
+  become: false
+  local_action: copy content="{{join_command.stdout_lines[0]}}" dest="./join-command"
+
+- name: Add kubectl completion to bashrc
+  shell: |
+     echo 'source <(kubectl completion bash)' >> /home/{{ansible_user}}/.bashrc
+  args:
+    executable: /bin/bash
+
+
+- name: Source the bashrc file
+  shell: 'source /home/{{ansible_user}}/.bashrc'
+  args:
+       executable: /bin/bash

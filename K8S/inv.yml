@@ -1,0 +1,10 @@
+---
+all:
+  children:
+    master:
+      hosts:
+        master_node:
+    worker:
+      hosts:
+        worker_node:
+

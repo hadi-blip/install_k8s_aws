@@ -1,0 +1,1 @@
+kubeadm join 15.68.0.8:6443 --token ri3kj6.hl94n0sbfhj4xxgm --discovery-token-ca-cert-hash sha256:337b959b675f79489c318ec82ae7fdfd5a5cfe1bb9280731853f76f4f94dd1e0 

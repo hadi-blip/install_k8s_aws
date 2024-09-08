@@ -1,0 +1,5 @@
+---
+master_host: ""
+
+master_hostname: "master"
+worker_hostname: "worker"

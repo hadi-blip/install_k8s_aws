@@ -1,0 +1,6 @@
+ansible_private_key_file: "~/key_hmr.pem"
+
+master_host: "35.180.90.1"
+
+master_hostname: "master"
+worker_hostname: "worker"

@@ -1,0 +1,98 @@
+---
+# Install prerequisites
+
+- name: Install dependencies
+  package:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: latest
+    update_cache: yes
+
+- name: Disable swap
+  command: swapoff -a
+  become: true
+
+- name: Disable swap permanently
+  lineinfile:
+    path: /etc/fstab
+    regexp: '^\s*([^#\s]+)\s+\S+\s+swap\s+'
+    state: absent
+
+# Install containerd
+- name: Install containerd
+  package:
+    name: containerd
+    state: latest
+    update_cache: yes
+
+- name: Configure containerd
+  template:
+    src: containerd-config.toml.j2
+    dest: /etc/containerd/config.toml
+  notify: Restart containerd
+
+- name: Import GPG key for Kubernetes
+  shell: |
+   curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository
+  shell: |
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+  args:
+    creates: /etc/apt/sources.list.d/kubernetes.list
+
+- name: Update apt cache again
+  package:
+    update_cache: yes
+
+- name: Install Kubernetes components
+  package:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: latest
+    update_cache: yes
+
+- name: Mark Kubernetes packages as held
+  command: |
+    apt-mark hold kubelet kubeadm kubectl
+  become: true
+- name: Create sysctl configuration file for Kubernetes
+  copy:
+    dest: /etc/sysctl.d/kubernetes.conf
+    content: |
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Reload sysctl parameters
+  command: sysctl --system
+
+
+- name: Create modules-load configuration file for Kubernetes
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+          overlay
+          br_netfilter
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Load overlay module
+  command: modprobe overlay
+  ignore_errors: true
+
+- name: Load br_netfilter module
+  command: modprobe br_netfilter
+  ignore_errors: true

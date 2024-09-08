@@ -1,0 +1,2 @@
+ansible_host: "{{master_host}}"
+ansible_user: admin
